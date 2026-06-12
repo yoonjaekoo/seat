@@ -706,7 +706,21 @@ App.layout = {
           cell.onclick=()=>App.layout._toggleZoneCell(key);
         }else if(!(editingZoneId)){
           cell.onclick=()=>App.layout._cycleCell(r,c);
-          cell.oncontextmenu=(e)=>{e.preventDefault();App.layout._cycleCell(r,c,-1)};
+          cell.oncontextmenu=(e)=>{e.preventDefault();
+            const v=cells[r]&&cells[r][c];
+            if(v===1||v===2){
+              App.data.pushUndo();
+              if(isLocked){
+                p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
+              }else{
+                if(!p.lockedSeats)p.lockedSeats=[];
+                p.lockedSeats.push(key);
+              }
+              App.data.autoSave();App.layout.render();
+            }else{
+              App.layout._cycleCell(r,c,-1);
+            }
+          };
         }
         container.appendChild(cell);
       }
@@ -984,13 +998,22 @@ App.generator = {
           cell.addEventListener('dragleave',App.generator._onDragLeave);
           cell.addEventListener('drop',App.generator._onDrop);
           cell.addEventListener('dragend',App.generator._onDragEnd);
-          if(!isLocked&&val===1)cell.oncontextmenu=(e)=>{e.preventDefault();
-            if(seating[key]){App.data.pushUndo();delete seating[key];App.data.autoSave();App.generator.renderSeating()}
+          cell.oncontextmenu=(e)=>{e.preventDefault();
+            if(val!==1&&val!==2)return;
+            App.data.pushUndo();
+            if(isLocked){
+              p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
+              App.toast.success('Seat unlocked');
+            } else {
+              if(!p.lockedSeats)p.lockedSeats=[];
+              p.lockedSeats.push(key);
+              App.toast.success('Seat locked');
+            }
+            App.data.autoSave();App.generator.renderSeating();
           };
           cell.ondblclick=()=>{
-            if(isLocked)return;
+            if(isLocked||(val!==1&&val!==2))return;
             if(seating[key]){App.data.pushUndo();delete seating[key];App.data.autoSave();App.generator.renderSeating();return}
-            if(val!==1)return;
             App.generator._assignSingleSeat(key);
           };
         } else {

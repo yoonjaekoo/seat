@@ -169,6 +169,10 @@
             <h3>Controls</h3>
             <div class="gen-project-students">
               <h4>Assigned Students (<span id="genStudentCount">0</span>)</h4>
+              <div style="display:flex;gap:4px;margin-bottom:6px">
+                <button class="btn btn-sm btn-secondary" onclick="App.projectStudents.showAddDialog()">+ Add from DB</button>
+                <button class="btn btn-sm btn-danger" onclick="App.projectStudents.removeAll()">Remove All</button>
+              </div>
               <input type="text" class="search-input" id="genStudentSearch" placeholder="Search students..." oninput="App.generator.updateStudentList()">
               <div id="genStudentList" class="gen-student-list"></div>
             </div>
@@ -189,6 +193,10 @@
             <span>Students: <strong id="genAssignedCount">0</strong></span>
             <span>Empty: <strong id="genEmptyCount">0</strong></span>
             <span>Occupancy: <strong id="genOccRate">0%</strong></span>
+            <span style="margin-left:auto;display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" onclick="window.print()" title="Print/PDF">&#x1f5a8; Print</button>
+              <button class="btn btn-sm btn-secondary" onclick="App.exportJSON()" title="Export JSON">&#x1f4e5; JSON</button>
+            </span>
           </div>
           <div id="genSeatingGrid" class="layout-grid gen-grid"></div>
         </div>
