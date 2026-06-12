@@ -615,7 +615,7 @@ App.projectStudents = {
 
 /* ===== LAYOUT EDITOR ===== */
 App.layout = {
-  _cellTypes: [0,1,3,4],
+  _cellTypes: [0,1],
   _cellLabels: ['','','','',''],
   _isZoneEditing: false,
 
@@ -654,8 +654,7 @@ App.layout = {
   },
 
   getCellColor(type){
-    const colors={0:'cell-empty',1:'cell-desk',3:'cell-wall',4:'cell-door'};
-    return colors[type]||'cell-empty';
+    return type===1?'cell-desk':'cell-empty';
   },
 
   render(){
@@ -708,18 +707,15 @@ App.layout = {
           cell.onclick=()=>App.layout._cycleCell(r,c);
           cell.oncontextmenu=(e)=>{e.preventDefault();
             const v=cells[r]&&cells[r][c];
-            if(v===1){
-              App.data.pushUndo();
-              if(isLocked){
-                p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
-              }else{
-                if(!p.lockedSeats)p.lockedSeats=[];
-                p.lockedSeats.push(key);
-              }
-              App.data.autoSave();App.layout.render();
+            if(v!==1)return;
+            App.data.pushUndo();
+            if(isLocked){
+              p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
             }else{
-              App.layout._cycleCell(r,c,-1);
+              if(!p.lockedSeats)p.lockedSeats=[];
+              p.lockedSeats.push(key);
             }
+            App.data.autoSave();App.layout.render();
           };
         }
         container.appendChild(cell);
@@ -728,13 +724,11 @@ App.layout = {
     App.layout._renderZoneList();
   },
 
-  _cycleCell(r,c,dir=1){
+  _cycleCell(r,c){
     const p=getProject();if(!p)return;
     const val=(p.cells[r]||[])[c]||0;
-    const types=[0,1,3,4];
-    const idx=types.indexOf(val);
     App.data.pushUndo();
-    const newVal=types[(idx+dir+4)%4];
+    const newVal=val===0?1:0;
     p.cells[r][c]=newVal;
     if(newVal!==1){delete(p.seating[r+','+c])}
     p.updatedAt=Date.now();App.data.autoSave();App.layout.render();
@@ -818,30 +812,34 @@ App.layout = {
     const midRow=Math.floor(rows/2);const midCol=Math.floor(cols/2);
     switch(t){
       case 'rows':
-        for(let r=1;r<rows-1;r++)for(let c=0;c<cols;c++)grid[r][c]=c<2||c>=cols-2?3:1;
-        for(let r=0;r<rows;r++){grid[r][0]=3;grid[r][cols-1]=3}
-        grid[0][0]=4;grid[0][cols-1]=4;break;
+        for(let r=1;r<rows;r++)for(let c=0;c<cols;c++)grid[r][c]=1;
+        for(let r=0;r<rows;r++){grid[r][0]=0;grid[r][cols-1]=0}
+        grid[0][0]=0;grid[0][cols-1]=0;break;
       case 'exam':
-        for(let r=1;r<rows;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[1][0]=4;grid[rows-1][cols-1]=4;break;
+        for(let r=1;r<rows;r++)for(let c=0;c<cols;c++)grid[r][c]=1;
+        grid[0][0]=1;
+        for(let r=0;r<rows;r++)grid[r][0]=0;
+        grid[rows-1][0]=1;grid[1][1]=1;break;
       case 'ushape':
-        for(let r=2;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[0][0]=4;grid[0][cols-1]=4;break;
+        for(let r=0;r<rows;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
+        for(let r=0;r<2;r++)for(let c=0;c<cols;c++)grid[r][c]=0;
+        for(let r=2;r<rows;r++){grid[r][0]=1;grid[r][cols-1]=1}
+        break;
       case 'groups':
-        const groups=[[2,2,4,4],[6,2,4,4]];
-        groups.forEach(([rr,cc,dr,dc])=>{
-          for(let r=rr;r<rr+dr&&r<rows;r++)for(let c=cc;c<cc+dc&&c<cols;c++)grid[r][c]=1
-        });
-        grid[1][0]=4;break;
+        for(let r=1;r<rows-1;r++)for(let c=1;c<cols-1;c++){
+          if((r<rows/2&&c<cols/2)||(r>=rows/2&&c>=cols/2))grid[r][c]=0;
+          else grid[r][c]=1;
+        }
+        break;
       case 'computer':
-        for(let r=1;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=c%2?1:0;
-        grid[rows-1][0]=4;break;
+        for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)grid[r][c]=c%2===0&&r%2===0?1:0;
+        break;
       case 'lecture':
-        for(let r=2;r<rows;r++){grid[r][0]=3;grid[r][cols-1]=3;for(let c=1;c<cols-1;c++)grid[r][c]=1}
-        grid[2][0]=4;break;
+        for(let r=2;r<rows;r++)for(let c=0;c<cols;c++)grid[r][c]=c<cols-0?1:0;
+        break;
       case 'elementary':
         for(let r=1;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[rows-1][0]=4;break;
+        break;
     }
     p.cells=grid;p.updatedAt=Date.now();App.data.autoSave();App.layout.render();
     document.getElementById('templateSelect').value='';
