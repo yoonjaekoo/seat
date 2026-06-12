@@ -615,7 +615,7 @@ App.projectStudents = {
 
 /* ===== LAYOUT EDITOR ===== */
 App.layout = {
-  _cellTypes: [0,1,2,3,4],
+  _cellTypes: [0,1,3,4],
   _cellLabels: ['','','','',''],
   _isZoneEditing: false,
 
@@ -654,7 +654,7 @@ App.layout = {
   },
 
   getCellColor(type){
-    const colors={0:'cell-empty',1:'cell-desk',2:'cell-teacher',3:'cell-wall',4:'cell-door'};
+    const colors={0:'cell-empty',1:'cell-desk',3:'cell-wall',4:'cell-door'};
     return colors[type]||'cell-empty';
   },
 
@@ -693,7 +693,7 @@ App.layout = {
         const student=studentId?getStudent(studentId):null;
         const zone=zoneCellMap[key];
         if(showZones&&zone)cell.style.background=zoneColors[zone.rule]||'transparent';
-        if(val===1||val===2){
+        if(val===1){
           if(App._state.settings.seatNumbers)cell.innerHTML='<span class="seat-label">'+num+'</span>';
           num++;
           if(isLocked)cell.innerHTML+='<span class="seat-lock">🔒</span>';
@@ -708,7 +708,7 @@ App.layout = {
           cell.onclick=()=>App.layout._cycleCell(r,c);
           cell.oncontextmenu=(e)=>{e.preventDefault();
             const v=cells[r]&&cells[r][c];
-            if(v===1||v===2){
+            if(v===1){
               App.data.pushUndo();
               if(isLocked){
                 p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
@@ -731,10 +731,12 @@ App.layout = {
   _cycleCell(r,c,dir=1){
     const p=getProject();if(!p)return;
     const val=(p.cells[r]||[])[c]||0;
+    const types=[0,1,3,4];
+    const idx=types.indexOf(val);
     App.data.pushUndo();
-    const newVal=(val+dir+5)%5;
+    const newVal=types[(idx+dir+4)%4];
     p.cells[r][c]=newVal;
-    if(newVal!==1&&newVal!==2){delete(p.seating[r+','+c])}
+    if(newVal!==1){delete(p.seating[r+','+c])}
     p.updatedAt=Date.now();App.data.autoSave();App.layout.render();
   },
 
@@ -818,28 +820,28 @@ App.layout = {
       case 'rows':
         for(let r=1;r<rows-1;r++)for(let c=0;c<cols;c++)grid[r][c]=c<2||c>=cols-2?3:1;
         for(let r=0;r<rows;r++){grid[r][0]=3;grid[r][cols-1]=3}
-        grid[0][0]=4;grid[0][cols-1]=4;grid[0][midCol]=2;break;
+        grid[0][0]=4;grid[0][cols-1]=4;break;
       case 'exam':
         for(let r=1;r<rows;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[0][midCol]=2;grid[1][0]=4;grid[rows-1][cols-1]=4;break;
+        grid[1][0]=4;grid[rows-1][cols-1]=4;break;
       case 'ushape':
         for(let r=2;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[0][midCol]=2;grid[0][0]=4;grid[0][cols-1]=4;break;
+        grid[0][0]=4;grid[0][cols-1]=4;break;
       case 'groups':
-        const groups=[[2,2,4,4],[2,6,4,6]];
+        const groups=[[2,2,4,4],[6,2,4,4]];
         groups.forEach(([rr,cc,dr,dc])=>{
           for(let r=rr;r<rr+dr&&r<rows;r++)for(let c=cc;c<cc+dc&&c<cols;c++)grid[r][c]=1
         });
-        grid[0][midCol]=2;grid[1][0]=4;break;
+        grid[1][0]=4;break;
       case 'computer':
         for(let r=1;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=c%2?1:0;
-        grid[0][midCol]=2;grid[rows-1][0]=4;break;
+        grid[rows-1][0]=4;break;
       case 'lecture':
         for(let r=2;r<rows;r++){grid[r][0]=3;grid[r][cols-1]=3;for(let c=1;c<cols-1;c++)grid[r][c]=1}
-        grid[2][0]=4;grid[0][midCol]=2;break;
+        grid[2][0]=4;break;
       case 'elementary':
         for(let r=1;r<rows-1;r++)for(let c=1;c<cols-1;c++)grid[r][c]=1;
-        grid[0][Math.floor(cols/4)]=2;grid[rows-1][0]=4;break;
+        grid[rows-1][0]=4;break;
     }
     p.cells=grid;p.updatedAt=Date.now();App.data.autoSave();App.layout.render();
     document.getElementById('templateSelect').value='';
@@ -981,7 +983,7 @@ App.generator = {
         const student=studentId?getStudent(studentId):null;
         const zone=zoneCellMap[key];
         if(showZones&&zone)cell.style.background=zoneColors[zone.rule]||'transparent';
-        if(val===1||val===2){
+        if(val===1){
           desks++;
           if(App._state.settings.seatNumbers)cell.innerHTML='<span class="seat-label">'+num+'</span>';
           num++;
@@ -999,7 +1001,7 @@ App.generator = {
           cell.addEventListener('drop',App.generator._onDrop);
           cell.addEventListener('dragend',App.generator._onDragEnd);
           cell.oncontextmenu=(e)=>{e.preventDefault();
-            if(val!==1&&val!==2)return;
+            if(val!==1)return;
             App.data.pushUndo();
             if(isLocked){
               p.lockedSeats=(p.lockedSeats||[]).filter(k=>k!==key);
@@ -1012,7 +1014,7 @@ App.generator = {
             App.data.autoSave();App.generator.renderSeating();
           };
           cell.ondblclick=()=>{
-            if(isLocked||(val!==1&&val!==2))return;
+            if(isLocked||val!==1)return;
             if(seating[key]){App.data.pushUndo();delete seating[key];App.data.autoSave();App.generator.renderSeating();return}
             App.generator._assignSingleSeat(key);
           };
@@ -1055,7 +1057,7 @@ App.generator = {
     if(srcKey===tgtKey)return;
     const p=getProject();if(!p)return;
     const val=p.cells[r]&&p.cells[r][c];
-    if(val!==1&&val!==2)return;
+    if(val!==1)return;
     if((p.lockedSeats||[]).includes(tgtKey))return;
     App.data.pushUndo();
     const srcStudent=p.seating[srcKey];
@@ -1085,6 +1087,7 @@ App.generator = {
     if(!students.length)return App.toast.warning(__('assignStudents'));
     const cells=p.cells||[];let deskKeys=[];
     for(let r=0;r<cells.length;r++)for(let c=0;c<(cells[r]||[]).length;c++)if(cells[r][c]===1)deskKeys.push(r+','+c);
+    if(!deskKeys.length)return App.toast.warning('No student desks found. Add desks in Layout Editor.');
     if(!deskKeys.length)return App.toast.warning(__('noDesks'));
     App.data.pushUndo();
     const zones=p.zones||[];
@@ -1319,7 +1322,7 @@ App.settings = {
     document.getElementById('settingAnimations').checked=s.animations!==false;
     document.getElementById('settingSeatNumbers').checked=s.seatNumbers===true;
     document.getElementById('settingConfetti').checked=s.confetti!==false;
-    document.getElementById('settingLanguage').value=s.language||'ko';
+    document.getElementById('settingLanguage').value=s.language||'en';
     document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('btn-primary',b.dataset.theme===s.theme));
     document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('btn-secondary',b.dataset.theme!==s.theme));
   },
@@ -1403,10 +1406,17 @@ App._refreshAll = function(){
 /* ===== INIT ===== */
 (function init(){
   App.data.load();
-  App._state.settings = App._state.settings || { theme:'light', autoSave:true, animations:true, seatNumbers:false, confetti:true, language:'ko' };
+  App._state.settings = App._state.settings || { theme:'light', autoSave:true, animations:true, seatNumbers:false, confetti:true, language:'en' };
   App._state.projects = App._state.projects || [];
   App._state.students = App._state.students || [];
   document.documentElement.setAttribute('data-theme', App._state.settings.theme || 'light');
+
+  // Sidebar click delegation
+  document.getElementById('main-nav').addEventListener('click', function(e){
+    const item = e.target.closest('.nav-item');
+    if(item && item.dataset.view) App.nav.go(item.dataset.view);
+  });
+
   App.nav.go(App._state.currentView || 'dashboard');
   App.settings.refresh();
   setInterval(()=>{if(App._dirty)App.data.save()},2000);
